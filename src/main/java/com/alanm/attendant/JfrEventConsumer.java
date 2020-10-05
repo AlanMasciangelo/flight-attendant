@@ -1,6 +1,7 @@
 package com.alanm.attendant;
 
 import java.io.IOException;
+import java.time.Instant;
 import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -19,11 +20,11 @@ import jdk.jfr.consumer.RecordedEvent;
 public class JfrEventConsumer implements AutoCloseable {
 	private static Logger logger = Logger.getLogger(JfrEventConsumer.class.getName());
 	
-	Consumer<String> eventConsumer;
+	Consumer<JsonObject> eventConsumer;
 	Runnable cleanup;
 	
 	// Use one of the static construction methods below
-	private JfrEventConsumer(Consumer<String> jsonConsumer, Runnable cleanup) {
+	private JfrEventConsumer(Consumer<JsonObject> jsonConsumer, Runnable cleanup) {
 		this.eventConsumer = jsonConsumer;
 		this.cleanup = cleanup;
 	}
@@ -34,7 +35,7 @@ public class JfrEventConsumer implements AutoCloseable {
 		addDouble(object, event, "machineTotal");
 		addDouble(object, event, "jvmSystem");
 		addDouble(object, event, "jvmUser");
-		eventConsumer.accept(object.toString());
+		eventConsumer.accept(object);
 	}
 	
 	
@@ -43,7 +44,7 @@ public class JfrEventConsumer implements AutoCloseable {
 		object.addProperty("event", event.getEventType().getName());
 		addDouble(object, event, "activeCount");
 		addDouble(object, event, "peakCount");
-		eventConsumer.accept(object.toString());
+		eventConsumer.accept(object);
 	}
 		
 	public void onJavaError(RecordedEvent event) {
@@ -52,7 +53,7 @@ public class JfrEventConsumer implements AutoCloseable {
 		addString(object, event, "eventThread");
 		addString(object, event, "class");
 		addString(object, event, "message");
-		eventConsumer.accept(object.toString());
+		eventConsumer.accept(object);
 	}
 	
 	
@@ -61,7 +62,7 @@ public class JfrEventConsumer implements AutoCloseable {
 		object.addProperty("event", event.getEventType().getName());
 		addString(object, event, "key");
 		addString(object, event, "value");
-		eventConsumer.accept(object.toString());
+		eventConsumer.accept(object);
 	}
 	
 	
@@ -70,7 +71,7 @@ public class JfrEventConsumer implements AutoCloseable {
 		object.addProperty("event", event.getEventType().getName());
 		addString(object, event, "key");
 		addString(object, event, "value");
-		eventConsumer.accept(object.toString());
+		eventConsumer.accept(object);
 	}
 	
 	private JsonObject addDouble(JsonObject object, RecordedEvent event, String name) {
@@ -89,7 +90,7 @@ public class JfrEventConsumer implements AutoCloseable {
 	}
 	
 	public static JfrEventConsumer createLoggingConsumer() {
-		return new JfrEventConsumer(logger::info, () -> {});
+		return new JfrEventConsumer(json -> logger.info(json.toString()),() -> {});
 	}
 	
 	public static JfrEventConsumer createElasticConsumer() {
@@ -106,10 +107,12 @@ public class JfrEventConsumer implements AutoCloseable {
 			}
 		};
 		
-		Consumer<String> sendIndexRequest = s -> {
-			logger.info(s);
+		Consumer<JsonObject> sendIndexRequest = json -> {
+			json.addProperty("time", Instant.now().toString());
+			String data = json.toString();
+			logger.info(data);
 			IndexRequest request = new IndexRequest("jfr");
-			request.source(s, XContentType.JSON);
+			request.source(data, XContentType.JSON);
 			try {
 				client.index(request, RequestOptions.DEFAULT);
 			} catch (IOException e) {

@@ -26,10 +26,14 @@ public class Attendant {
 		// Event configuration
 		rs.enable("jdk.CPULoad").withPeriod(duration);
 		rs.enable("jdk.JavaThreadStatistics").withPeriod(duration);
-		rs.enable("jdk.JavaError").withoutThreshold();
+		rs.enable("jdk.JavaError").withStackTrace();
 		rs.enable("jdk.InitialEnvironmentVariable").withoutThreshold();
 		rs.enable("jdk.InitialSystemProperty").withoutThreshold();
-
+		rs.enable("jdk.YoungGarbageCollection").withoutThreshold();
+	    rs.enable("jdk.OldGarbageCollection").withoutThreshold();
+		rs.enable("jdk.GCHeapSummary").withPeriod(duration);
+		rs.enable("jdk.JVMInformation");
+		
 		rs.onEvent("jdk.CPULoad", consumer::onCPULoad);
 		rs.onEvent("jdk.JavaThreadStatistics", consumer::onJavaThreadStatistics);
 		rs.onEvent("jdk.JavaError", consumer::onJavaError);
@@ -43,20 +47,5 @@ public class Attendant {
 			}
 		});
 
-		// Some other interesting stats
-//	      rs.enable("jdk.YoungGarbageCollection").withoutThreshold();
-//	      rs.enable("jdk.OldGarbageCollection").withoutThreshold();
-//	      rs.enable("jdk.GCHeapSummary").withPeriod(duration);
-//	      rs.enable("jdk.PhysicalMemory").withPeriod(duration);
-//	      rs.enable("jdk.GCConfiguration").withPeriod(duration);
-//	      rs.enable("jdk.SafepointBegin");
-//	      rs.enable("jdk.SafepointEnd");
-//	      rs.enable("jdk.ObjectAllocationOutsideTLAB").withStackTrace();
-//	      rs.enable("jdk.ObjectAllocationInNewTLAB").withStackTrace();
-//	      rs.enable("jdk.ExecutionSample").withPeriod(Duration.ofMillis(10)).withStackTrace();
-//	      rs.enable("jdk.ClassLoadingStatistics").withPeriod(duration);
-//	      rs.enable("jdk.Compilation").withoutThreshold();
-//	      rs.enable("jdk.GCHeapConfiguration").withPeriod(duration);
-//	      rs.enable("jdk.Flush").withoutThreshold();
 	}
 }
